@@ -1,190 +1,242 @@
-var wordBlank = document.querySelector(".word-blanks");
-var win = document.querySelector(".win");
-var lose = document.querySelector(".lose");
-var timerElement = document.querySelector(".timer-count");
-var startButton = document.querySelector(".start-button");
+// Gathering HTML elements for manipulation
+var quizBody = document.getElementById("quiz");
+var resultsEl = document.getElementById("result");
+var finalScoreEl = document.getElementById("finalScore");
+var gameoverDiv = document.getElementById("gameover");
+var questionsEl = document.getElementById("questions");
+var quizTimer = document.getElementById("timer");
+var startQuizButton = document.getElementById("startbtn");
+var startQuizDiv = document.getElementById("startpage");
+var highscoreContainer = document.getElementById("highscoreContainer");
+var highscoreDiv = document.getElementById("high-scorePage");
+var highscoreInputName = document.getElementById("initials");
+var highscoreDisplayName = document.getElementById("highscore-initials");
+var endGameBtns = document.getElementById("endGameBtns");
+var submitScoreBtn = document.getElementById("submitScore");
+var highscoreDisplayScore = document.getElementById("highscore-score");
+var buttonA = document.getElementById("a");
+var buttonB = document.getElementById("b");
+var buttonC = document.getElementById("c");
+var buttonD = document.getElementById("d");
 
-var chosenWord = "";
-var numBlanks = 0;
-var winCounter = 0;
-var loseCounter = 0;
-var isWin = false;
-var timer;
-var timerCount;
+// Quiz question object
+var quizQuestions = [{
+    question: "Javascript is an _____ language?",
+    choiceA: "Easy",
+    choiceB: "Foreign",
+    choiceC: "Object-oriented",
+    choiceD: "Procedural",
+    correctAnswer: "c"},
+  {
+    question: "Which of the following keywords is used to define a variable in JS?",
+    choiceA: "var",
+    choiceB: "let",
+    choiceC: "A and B",
+    choiceD: "None",
+    correctAnswer: "c"},
+   {
+    question: "Which of the following methods is used to access HTML elements using JS?",
+    choiceA: "getElementbyID()",
+    choiceB: "getElementsbyClassName()",
+    choiceC: "A and B",
+    choiceD: "return",
+    correctAnswer: "c"},
+    {
+    question: "How can a datatype be declared to be a constant type?",
+    choiceA: "const",
+    choiceB: "var",
+    choiceC: "let",
+    choiceD: "function",
+    correctAnswer: "a"},
+    {
+    question: "Which function is used to serialize an object into a JSON string in JS?",
+    choiceA: "stringify()",
+    choiceB: "parse()",
+    choiceC: "convert()",
+    choiceD: "None of the above",
+    correctAnswer: "a"},  
+    {
+    question: "What does DOM stand for?",
+    choiceA: "DOMINATION",
+    choiceB: "Dominion",
+    choiceC: "Documentive Objective Model",
+    choiceD: "Document Object Model",
+    correctAnswer: "d"},
+    {
+    question: "What HTML attribute references an external JavaScript file?",
+    choiceA: "href",
+    choiceB: "src",
+    choiceC: "class",
+    choiceD: "index",
+    correctAnswer: "b"},
+        
+    
+    ];
+// Other global variables
+var finalQuestionIndex = quizQuestions.length;
+var currentQuestionIndex = 0;
+var timeLeft = 60;
+var timerInterval;
+var score = 0;
+var correct;
 
-// Arrays used to create blanks and letters on screen
-var lettersInChosenWord = [];
-var blanksLetters = [];
+// This function cycles through the object array containing the quiz questions to generate the questions and answers.
+function generateQuizQuestion(){
+    gameoverDiv.style.display = "none";
+    if (currentQuestionIndex === finalQuestionIndex){
+        return showScore();
+    } 
+    var currentQuestion = quizQuestions[currentQuestionIndex];
+    questionsEl.innerHTML = "<p>" + currentQuestion.question + "</p>";
+    buttonA.innerHTML = currentQuestion.choiceA;
+    buttonB.innerHTML = currentQuestion.choiceB;
+    buttonC.innerHTML = currentQuestion.choiceC;
+    buttonD.innerHTML = currentQuestion.choiceD;
+};
 
-// Array of words the user will guess
-var words = ["variable","array", "modulus", "object", "function", "string", "boolean"];
+// Start Quiz function starts the TimeRanges, hides the start button, and displays the first quiz question.
+function startQuiz(){
+    gameoverDiv.style.display = "none";
+    startQuizDiv.style.display = "none";
+    generateQuizQuestion();
 
-// The init function is called when the page loads 
-function init() {
-  getWins();
-  getlosses();
+    // var timeLeft = 60;
+    //     function startTimer(){
+    //         console.log('timer')    
+    //         timerInterval = setInterval(function(){
+    //             timeLeft --;
+    //             document.getElementById("timer").innerHTML='00:'+sec;
+    //             if (timeLeft < 0) {
+    //                 clearInterval(timer);
+    //                 alert("Time is up!")
+    //             }
+    //         }, 1000);
+    //     }
+    //     document.getElementById('button').addEventListener('click', function() {
+    //         timeLeft -= 5;
+    //         document.getElementById('timer').innerHTML='00:'+sec;
+    //     });
+    //     startTimer();
+    // Timer
+    timerInterval = setInterval(function() {
+        timeLeft--;
+        quizTimer.textContent = "Time left: " + timeLeft;
+    
+        if(timeLeft === 0) {
+          clearInterval(timerInterval);
+          showScore();
+        }
+      }, 1000);
+    quizBody.style.display = "block";
+    
+    
+}
+// Shows score at the end
+function showScore(){
+    quizBody.style.display = "none"
+    gameoverDiv.style.display = "flex";
+    clearInterval(timerInterval);
+    highscoreInputName.value = "";
+    finalScoreEl.innerHTML = "You got " + score + " out of " + quizQuestions.length + " correct!";
 }
 
-// The startGame function is called when the start button is clicked
-function startGame() {
-  isWin = false;
-  timerCount = 10;
-  // Prevents start button from being clicked when round is in progress
-  startButton.disabled = true;
-  renderBlanks()
-  startTimer()
-}
+// Requires initials to be entered in high score page and saved on localstorage
+submitScoreBtn.addEventListener("click", function highscore(){
+    
+    
+    if(highscoreInputName.value === "") {
+        alert("Initials cannot be blank");
+        return false;
+    }else{
+        var savedHighscores = JSON.parse(localStorage.getItem("savedHighscores")) || [];
+        var currentUser = highscoreInputName.value.trim();
+        var currentHighscore = {
+            name : currentUser,
+            score : score
+        };
+    
+        gameoverDiv.style.display = "none";
+        highscoreContainer.style.display = "flex";
+        highscoreDiv.style.display = "block";
+        endGameBtns.style.display = "flex";
+        
+        savedHighscores.push(currentHighscore);
+        localStorage.setItem("savedHighscores", JSON.stringify(savedHighscores));
+        generateHighscores();
 
-// The winGame function is called when the win condition is met
-function winGame() {
-  wordBlank.textContent = "YOU WON!!!🏆 ";
-  winCounter++
-  startButton.disabled = false;
-  setWins()
-}
-
-// The loseGame function is called when timer reaches 0
-function loseGame() {
-  wordBlank.textContent = "GAME OVER";
-  loseCounter++
-  startButton.disabled = false;
-  setLosses()
-}
-
-// The setTimer function starts and stops the timer and triggers winGame() and loseGame()
-function startTimer() {
-  // Sets timer
-  timer = setInterval(function() {
-    timerCount--;
-    timerElement.textContent = timerCount;
-    if (timerCount >= 0) {
-      // Tests if win condition is met
-      if (isWin && timerCount > 0) {
-        // Clears interval and stops timer
-        clearInterval(timer);
-        winGame();
-      }
     }
-    // Tests if time has run out
-    if (timerCount === 0) {
-      // Clears interval
-      clearInterval(timer);
-      loseGame();
-    }
-  }, 1000);
-}
-
-// Creates blanks on screen
-function renderBlanks() {
-  // Randomly picks word from words array
-  chosenWord = words[Math.floor(Math.random() * words.length)];
-  lettersInChosenWord = chosenWord.split("");
-  numBlanks = lettersInChosenWord.length;
-  blanksLetters = []
-  // Uses loop to push blanks to blankLetters array
-  for (var i = 0; i < numBlanks; i++) {
-    blanksLetters.push("_");
-  }
-  // Converts blankLetters array into a string and renders it on the screen
-  wordBlank.textContent = blanksLetters.join(" ")
-}
-
-// Updates win count on screen and sets win count to client storage
-function setWins() {
-  win.textContent = winCounter;
-  localStorage.setItem("winCount", winCounter);
-}
-
-// Updates lose count on screen and sets lose count to client storage
-function setLosses() {
-  lose.textContent = loseCounter;
-  localStorage.setItem("loseCount", loseCounter);
-}
-
-// These functions are used by init
-function getWins() {
-  // Get stored value from client storage, if it exists
-  var storedWins = localStorage.getItem("winCount");
-  // If stored value doesn't exist, set counter to 0
-  if (storedWins === null) {
-    winCounter = 0;
-  } else {
-    // If a value is retrieved from client storage set the winCounter to that value
-    winCounter = storedWins;
-  }
-  //Render win count to page
-  win.textContent = winCounter;
-}
-
-function getlosses() {
-  var storedLosses = localStorage.getItem("loseCount");
-  if (storedLosses === null) {
-    loseCounter = 0;
-  } else {
-    loseCounter = storedLosses;
-  }
-  lose.textContent = loseCounter;
-}
-
-function checkWin() {
-  // If the word equals the blankLetters array when converted to string, set isWin to true
-  if (chosenWord === blanksLetters.join("")) {
-    // This value is used in the timer function to test if win condition is met
-    isWin = true;
-  }
-}
-
-// Tests if guessed letter is in word and renders it to the screen.
-function checkLetters(letter) {
-  var letterInWord = false;
-  for (var i = 0; i < numBlanks; i++) {
-    if (chosenWord[i] === letter) {
-      letterInWord = true;
-    }
-  }
-  if (letterInWord) {
-    for (var j = 0; j < numBlanks; j++) {
-      if (chosenWord[j] === letter) {
-        blanksLetters[j] = letter;
-      }
-    }
-    wordBlank.textContent = blanksLetters.join(" ");
-  }
-}
-
-// Attach event listener to document to listen for key event
-document.addEventListener("keydown", function(event) {
-  // If the count is zero, exit function
-  if (timerCount === 0) {
-    return;
-  }
-  // Convert all keys to lower case
-  var key = event.key.toLowerCase();
-  var alphabetNumericCharacters = "abcdefghijklmnopqrstuvwxyz0123456789 ".split("");
-  // Test if key pushed is letter
-  if (alphabetNumericCharacters.includes(key)) {
-    var letterGuessed = event.key;
-    checkLetters(letterGuessed)
-    checkWin();
-  }
+    
 });
 
-// Attach event listener to start button to call startGame function on click
-startButton.addEventListener("click", startGame);
-
-// Calls init() so that it fires when page opened
-init();
-
-// Bonus: Add reset button
-var resetButton = document.querySelector(".reset-button");
-
-function resetGame() {
-  // Resets win and loss counts
-  winCounter = 0;
-  loseCounter = 0;
-  // Renders win and loss counts and sets them into client storage
-  setWins()
-  setLosses()
+// This function clears the list for the high scores and generates a new high score list from local storage
+function generateHighscores(){
+    highscoreDisplayName.innerHTML = "";
+    highscoreDisplayScore.innerHTML = "";
+    var highscores = JSON.parse(localStorage.getItem("savedHighscores")) || [];
+    for (i=0; i<highscores.length; i++){
+        var newNameSpan = document.createElement("li");
+        var newScoreSpan = document.createElement("li");
+        newNameSpan.textContent = highscores[i].name;
+        newScoreSpan.textContent = highscores[i].score;
+        highscoreDisplayName.appendChild(newNameSpan);
+        highscoreDisplayScore.appendChild(newScoreSpan);
+    }
 }
-// Attaches event listener to button
-resetButton.addEventListener("click", resetGame);
+
+// This function displays the high scores page while hiding all of the other pages from 
+function showHighscore(){
+    startQuizDiv.style.display = "none"
+    gameoverDiv.style.display = "none";
+    highscoreContainer.style.display = "flex";
+    highscoreDiv.style.display = "block";
+    endGameBtns.style.display = "flex";
+
+    generateHighscores();
+}
+
+// This function clears the local storage of the high scores as well as clearing the text from the high score board
+function clearScore(){
+    window.localStorage.clear();
+    highscoreDisplayName.textContent = "";
+    highscoreDisplayScore.textContent = "";
+}
+
+// This function sets all the variables back to their original values and shows the home page to enable replay of the quiz
+function replayQuiz(){
+    highscoreContainer.style.display = "none";
+    gameoverDiv.style.display = "none";
+    startQuizDiv.style.display = "flex";
+    timeLeft = 60;
+    score = 0;
+    currentQuestionIndex = 0;
+}
+
+// Checks answer of each response
+function checkAnswer(answer){
+    correct = quizQuestions[currentQuestionIndex].correctAnswer;
+
+    if (answer === correct && currentQuestionIndex !== finalQuestionIndex){
+        score++;
+        alert("That Is Correct!");
+        currentQuestionIndex++;
+        generateQuizQuestion();
+        //Subtract 10s from timer
+    }else if (answer !== correct && currentQuestionIndex !== finalQuestionIndex){
+        alert("That Is Incorrect.")
+        timeLeft -= 10;
+            if (quizTimer >= timeLeft) {
+                clearInterval(interval);
+                if (quizTimer > timeLeft)
+                    quizTimer = timeLeft;
+                showScore();
+            }
+        currentQuestionIndex++;
+        generateQuizQuestion();
+        //display in the results div that the answer is wrong.
+    }else{
+        showScore();
+    }
+}
+
+// Start quiz
+startQuizButton.addEventListener("click",startQuiz);
